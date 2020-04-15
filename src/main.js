@@ -3,12 +3,14 @@ import App from './App.vue'
 import './registerServiceWorker'
 import router from './router'
 import store from './store'
+import axios from 'axios'
 import vuetify from './plugins/vuetify';
 
 //自定义工具类
 // import './utils/drag';
 
 Vue.config.productionTip = false
+Vue.prototype.$axios=axios;
 
 new Vue({
   router,

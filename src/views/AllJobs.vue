@@ -9,24 +9,25 @@
     <v-container>
       <v-card v-for="(item, index) in s" :key="index+100" class="info-card">
         <v-card-title>{{ item.title }}</v-card-title>
-        <v-card-subtitle>{{
+        <v-card-subtitle>
+          {{
           `【${item.class}】${item.city} `
-        }}</v-card-subtitle>
+          }}
+        </v-card-subtitle>
         <!-- <v-card-text>详细描述</v-card-text> -->
         <v-card-actions>
           <v-btn text small color="primary">了解更多</v-btn>
         </v-card-actions>
       </v-card>
-      <v-parallax
-        height="150"
-        src="https://cdn.vuetifyjs.com/images/parallax/material.jpg"
-      ></v-parallax>
-      
+      <v-parallax height="150" src="https://cdn.vuetifyjs.com/images/parallax/material.jpg"></v-parallax>
+
       <v-card v-for="(item, index) in f" :key="index" class="info-card">
         <v-card-title>{{ item.title }}</v-card-title>
-        <v-card-subtitle>{{
+        <v-card-subtitle>
+          {{
           `【${item.class}】${item.city} `
-        }}</v-card-subtitle>
+          }}
+        </v-card-subtitle>
         <!-- <v-card-text>详细描述</v-card-text> -->
         <v-card-actions>
           <v-btn text small color="primary">了解更多</v-btn>
@@ -48,31 +49,88 @@
         </div>
       </template>
       <v-sheet class="text-center">
-        <v-btn class="mt-6" text color="error" @click="sheet = !sheet"
-          >close</v-btn
-        >
+        <v-btn class="mt-6" text color="error" @click="sheet = !sheet">close</v-btn>
         <v-container>
-          <h1>搜索表单</h1>
-          <h1>未上线</h1>
-          <v-text-field label="模糊搜索"></v-text-field>
-          <!-- <v-select :items="items" label="学历层次"></v-select>
-          <v-select :items="items" label="专业"></v-select>
-          <v-select :items="items" label="工作城市"></v-select> -->
+          <div id="searchForm">
+            <v-text-field label="类别" v-model="searchFormData.type"></v-text-field>
+            <v-text-field label="工作地点" v-model="searchFormData.position"></v-text-field>
+            <v-text-field label="公司名称" v-model="searchFormData.companyName"></v-text-field>
+            <v-text-field label="公司性质" v-model="searchFormData.companyNature"></v-text-field>
+            <v-text-field label="职务名称" v-model="searchFormData.jobName"></v-text-field>
+            <v-text-field label="职务性质" v-model="searchFormData.jobNature"></v-text-field>
+            <v-text-field label="教育背景" v-model="searchFormData.eduBackground"></v-text-field>
+            <v-btn @click="agreeSearch()">搜索</v-btn>
+          </div>
+          <div id="resultForm" v-if="ShowPage">
+            <v-btn text color="primary" @click="resultFormShow()" class="right-btn">返回</v-btn>
+            <br />
+            <v-card v-for="(item,index) in jobDatas" v-bind:key="index" class="info-card">
+              <v-card-title>
+                <span>{{ `${item.jobName}【${item.position}】`}}</span>
+              </v-card-title>
+              <v-card-subtitle
+                class="text-left"
+              >{{`${jobDatas.type} | ${jobDatas.jobNature} | ${jobDatas.eduBackground}`}}</v-card-subtitle>
+              <v-card-text class="text-left">
+                <span
+                  class="font-weight-black"
+                >{{`${jobDatas.companyName} ${jobDatas.companyNature}`}}</span>
+                <v-btn
+                  text
+                  small
+                  color="primary"
+                  class="float-right"
+                  v-bind:href="jobDatas.url"
+                >查看链接</v-btn>
+              </v-card-text>
+            </v-card>
+          </div>
         </v-container>
       </v-sheet>
     </v-bottom-sheet>
   </div>
 </template>
 <script>
+import axios from "axios";
+axios.defaults.headers.post["Content-Type"] =
+  "application/x-www-form-urlencoded";
 export default {
+  created() {
+    //页面被创建时执行一次查询函数
+    this.acceptData();
+  },
   data() {
     return {
       sheet: false,
+      searchFor: false,
       mgrState: false,
       mousedownState: false, //鼠标默认抬起
       iX: 0, //鼠标坐标 与 拖拽按钮 间距 x
       iY: 0, //鼠标坐标 与 拖拽按钮 间距 y
-      s:[
+      ShowPage: null,
+      details: {},
+      searchFormData: {
+        type: "",
+        position: "",
+        companyName: "",
+        companyNature: "",
+        jobName: "",
+        jobNature: "",
+        eduBackground: ""
+      },
+      jobDatas: [
+        {
+          type: "",
+          position: "",
+          companyName: "",
+          companyNature: "",
+          jobName: "",
+          jobNature: "",
+          eduBackground: ""
+        }
+      ],
+      searchData: {},
+      s: [
         {
           class: "政法类",
           city: "广东",
@@ -98,7 +156,8 @@ export default {
           class: "政法类",
           city: "四川",
           title: "南充市2020年引进高层次人才公告"
-        },{ class: "政法类", city: "湖北", title: "荆门市2020年“招硕引博”公告" },
+        },
+        { class: "政法类", city: "湖北", title: "荆门市2020年“招硕引博”公告" },
         {
           class: "政法类",
           city: "黑龙江",
@@ -116,8 +175,6 @@ export default {
         }
       ],
       f: [
-        
-        
         {
           class: "政法类",
           city: "上海",
@@ -398,6 +455,89 @@ export default {
     onmouseup() {
       // 设置当前状态为鼠标抬起
       this.mousedownState = false;
+    },
+    jsonData(arr) {
+      let json = "";
+      function fors(data, attr = false) {
+        data = JSON.parse(JSON.stringify(data));
+        for (let key in data) {
+          if (
+            Array.isArray(data[key]) ||
+            Object.prototype.toString.apply(data[key]) === "[object Object]"
+          ) {
+            fors(data[key], true);
+          } else {
+            if (attr) {
+              json = json + "&" + key + "[]" + "=" + data[key];
+            } else {
+              json = json + "&" + key + "=" + data[key];
+            }
+          }
+        }
+      }
+      fors(arr);
+      return json;
+    },
+
+    // 表单模糊实时搜索
+    agreeSearch() {
+      let position = this.searchFormData.position;
+      let type = this.searchFormData.type;
+      let companyName = this.searchFormData.companyName;
+      let companyNature = this.searchFormData.companyNature;
+      let jobName = this.searchFormData.jobName;
+      let jobNature = this.searchFormData.jobNature;
+      let eduBackground = this.searchFormData.eduBackground;
+      if (this.searchFormData.type !== "") {
+        this.$set(this.searchData, "type", type);
+      }
+      if (this.searchFormData.companyName !== "") {
+        this.$set(this.searchData, "companyName", companyName);
+      }
+      if (this.searchFormData.companyNature !== "") {
+        this.$set(this.searchData, "companyNature", companyNature);
+      }
+      if (this.searchFormData.jobName !== "") {
+        this.$set(this.searchData, "jobName", jobName);
+      }
+      if (this.searchFormData.jobNature !== "") {
+        this.$set(this.searchData, "jobNature", jobNature);
+      }
+      if (this.searchFormData.eduBackground !== "") {
+        this.$set(this.searchData, "eduBackground", eduBackground);
+      }
+      if (this.searchFormData.position !== "") {
+        this.$set(this.searchData, "position", position);
+      }
+      let data = this.searchData;
+      axios
+        .get("http://192.144.227.168:8089/info/multiSelect", {
+          params: data
+        })
+        .then(res => {
+          this.jobDatas = JSON.stringify(res.data.data);
+          let result = res.data.data;
+          this.ShowPage = true;
+          console.log(result);
+          this.searchFormData = {};
+          console.log("job" + this.jobDatas);
+        });
+
+      document.getElementById("searchForm").style.display = "none";
+      document.getElementById("resultForm").style.display = "inline";
+    },
+    resultFormShow() {
+      document.getElementById("searchForm").style.display = "inline";
+      document.getElementById("resultForm").style.display = "none";
+    },
+    acceptData() {
+      axios
+        .get("http://192.144.227.168:8089/info/multiSelect")
+        .then(response => {
+          this.jobDatas = response.data.data;
+          this.ShowPage = true;
+        })
+        .catch(error => console.log(error));
     }
   }
 };
@@ -408,6 +548,19 @@ export default {
   // height: 56px;
   position: fixed;
   top: 0;
-  right:0;
+  right: 0;
+}
+.subtitle {
+  text-align: left;
+}
+#resultForm {
+  display: none;
+}
+#searchForm {
+  display: inline;
+}
+.right-btn {
+  position: fixed;
+  right: 0;
 }
 </style>
