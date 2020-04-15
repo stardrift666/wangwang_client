@@ -34,6 +34,7 @@
     </v-content>
 
     <Tabbar />
+    
   </v-app>
 </template>
 
@@ -44,7 +45,7 @@ export default {
   name: "App",
 
   components: {
-    Tabbar
+    Tabbar,
   },
   data() {
     return {};
@@ -54,6 +55,7 @@ export default {
   //   //
   // }),
 };
+
 </script>
 <style lang="less" >
 .info-card{
