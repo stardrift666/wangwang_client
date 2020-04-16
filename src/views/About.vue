@@ -56,7 +56,7 @@ export default {
       let url = this.url;
       console.log(url);
       axios
-        .get("http://192.144.227.168:8089/home/insertUrl", {
+        .get("http://210.47.16.56:8080/home/insertUrl", {
           params: {
             url: ""
           }
